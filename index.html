@@ -111,7 +111,7 @@
         // Charger une liste de mots aléatoirement depuis une feuille de calcul Google
         document.getElementById('load-words').addEventListener('click', function() {
             // Remplacez cette URL par l'URL de votre feuille de calcul publiée
-            const spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/ID_DE_LA_FEUILLE/pub?gid=ID_DE_LA_PAGE&single=true&output=csv';
+            const spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfSuVW1MdzWxeYpj-axPd55vKq15Lw3msfi3_VMST_0dQ8dQqGyu2egEi_tRzK3AjMByQ2tZXgVXQN/pub?output=csv';
 
             fetch(spreadsheetUrl)
                 .then(response => response.text())

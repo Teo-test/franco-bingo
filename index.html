@@ -88,9 +88,7 @@
 <body>
     <h1>Bingo de mots</h1>
     <div>
-        <label for="mots">Entrez les mots ou phrases (séparés par des virgules) :</label><br>
-        <textarea id="mots" placeholder="Exemple: apple, banana, cherry, ..."></textarea><br>
-        <button id="generate-grid">Générer la grille</button>
+        <button id="load-words">Charger une liste aléatoire</button>
     </div>
     <table id="bingo-grid">
         <!-- Les cases du bingo seront générées ici -->
@@ -110,17 +108,46 @@
             return array;
         }
 
+        // Charger une liste de mots aléatoirement depuis une feuille de calcul Google
+        document.getElementById('load-words').addEventListener('click', function() {
+            // Remplacez cette URL par l'URL de votre feuille de calcul publiée
+            
+            const spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfSuVW1MdzWxeYpj-axPd55vKq15Lw3msfi3_VMST_0dQ8dQqGyu2egEi_tRzK3AjMByQ2tZXgVXQN/pub?output=csv';
+
+            fetch(spreadsheetUrl)
+                .then(response => response.text())
+                .then(data => {
+                    // Analyser les données CSV
+                    const rows = data.split('\n');
+                    const words = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        const cells = rows[i].split(',');
+                        for (let j = 0; j < cells.length; j++) {
+                            const word = cells[j].trim();
+                            if (word) {
+                                words.push(word);
+                            }
+                        }
+                    }
+
+                    if (words.length === 0) {
+                        alert('Aucune liste de mots disponible.');
+                        return;
+                    }
+
+                    // Mélanger les mots
+                    const shuffledWords = shuffle(words);
+                    generateGrid(shuffledWords);
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement de la feuille de calcul:', error);
+                    alert('Erreur lors du chargement de la feuille de calcul.');
+                });
+        });
+
         // Générer la grille de bingo
-        document.getElementById('generate-grid').addEventListener('click', function() {
-            const motsInput = document.getElementById('mots').value;
-            const mots = motsInput.split(',').map(mot => mot.trim()).filter(mot => mot !== '');
-
-            if (mots.length === 0) {
-                alert('Veuillez entrer au moins un mot ou une phrase.');
-                return;
-            }
-
-            const motsMelanges = shuffle(mots);
+        function generateGrid(words) {
+            const motsMelanges = shuffle(words);
             const grid = document.getElementById('bingo-grid');
             grid.innerHTML = ''; // Clear the grid
 
@@ -143,7 +170,7 @@
                     }
                 }
             }
-        });
+        }
 
         // Vérifier le score
         document.getElementById('check-score').addEventListener('click', function() {

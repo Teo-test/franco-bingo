@@ -133,13 +133,13 @@
                         }
                     }
 
-                    if (words.length < 25) {
+                    if (words.length < 9) {
                         alert('La liste de mots doit contenir au moins 25 mots.');
                         return;
                     }
 
-                    // Sélectionner aléatoirement 25 mots
-                    const randomWords = getRandomWords(words, 25);
+                    // Sélectionner aléatoirement 9 mots
+                    const randomWords = getRandomWords(words, 9);
                     generateGrid(randomWords);
                 })
                 .catch(error => {
@@ -155,10 +155,10 @@
             grid.innerHTML = ''; // Clear the grid
 
             // Générer une grille de 5x5
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
                 const row = grid.insertRow();
-                for (let j = 0; j < 5; j++) {
-                    const index = i * 5 + j;
+                for (let j = 0; j < 3; j++) {
+                    const index = i * 3 + j;
                     const cell = row.insertCell();
                     cell.textContent = motsMelanges[index];
                     cell.addEventListener('click', function() {

@@ -88,7 +88,7 @@
 <body>
     <h1>Bingo de mots</h1>
     <div>
-        <button id="load-words">Charger une liste aléatoire</button>
+        <button id="load-words">Charger une grille aléatoire</button>
     </div>
     <table id="bingo-grid">
         <!-- Les cases du bingo seront générées ici -->
@@ -108,7 +108,13 @@
             return array;
         }
 
-        // Charger une liste de mots aléatoirement depuis une feuille de calcul Google
+        // Fonction pour sélectionner aléatoirement 25 mots de la liste
+        function getRandomWords(words, count) {
+            const shuffled = shuffle(words);
+            return shuffled.slice(0, count);
+        }
+
+        // Charger une grille de mots aléatoirement depuis une feuille de calcul Google
         document.getElementById('load-words').addEventListener('click', function() {
             // Remplacez cette URL par l'URL de votre feuille de calcul publiée
             const spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfSuVW1MdzWxeYpj-axPd55vKq15Lw3msfi3_VMST_0dQ8dQqGyu2egEi_tRzK3AjMByQ2tZXgVXQN/pub?output=csv';
@@ -129,14 +135,14 @@
                         }
                     }
 
-                    if (words.length === 0) {
-                        alert('Aucune liste de mots disponible.');
+                    if (words.length < 25) {
+                        alert('La liste de mots doit contenir au moins 25 mots.');
                         return;
                     }
 
-                    // Mélanger les mots
-                    const shuffledWords = shuffle(words);
-                    generateGrid(shuffledWords);
+                    // Sélectionner aléatoirement 25 mots
+                    const randomWords = getRandomWords(words, 25);
+                    generateGrid(randomWords);
                 })
                 .catch(error => {
                     console.error('Erreur lors du chargement de la feuille de calcul:', error);
@@ -150,25 +156,16 @@
             const grid = document.getElementById('bingo-grid');
             grid.innerHTML = ''; // Clear the grid
 
-            // Calculer la taille de la grille
-            const gridSize = Math.ceil(Math.sqrt(motsMelanges.length));
-            const gridWidth = gridSize;
-            const gridHeight = Math.ceil(motsMelanges.length / gridWidth);
-
-            let row, cell;
-            for (let i = 0; i < gridHeight; i++) {
-                row = grid.insertRow();
-                for (let j = 0; j < gridWidth; j++) {
-                    const index = i * gridWidth + j;
-                    if (index < motsMelanges.length) {
-                        cell = row.insertCell();
-                        cell.textContent = motsMelanges[index];
-                        cell.addEventListener('click', function() {
-                            setTimeout(() => {
-                                this.classList.toggle('checked');
-                            }, 0);
-                        });
-                    }
+            // Générer une grille de 5x5
+            for (let i = 0; i < 5; i++) {
+                const row = grid.insertRow();
+                for (let j = 0; j < 5; j++) {
+                    const index = i * 5 + j;
+                    const cell = row.insertCell();
+                    cell.textContent = motsMelanges[index];
+                    cell.addEventListener('click', function() {
+                        this.classList.toggle('checked');
+                    });
                 }
             }
         }

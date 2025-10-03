@@ -60,7 +60,7 @@
             padding: 0 10px;
         }
 
-        button {
+        button, select {
             background-color: white;
             color: var(--primary-color);
             border: none;
@@ -76,6 +76,14 @@
             min-width: 140px;
             max-width: 200px;
             touch-action: manipulation;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234CAF50' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
         }
 
         button:active {
@@ -380,6 +388,9 @@
         <h1>Bingo de mots</h1>
 
         <div class="button-group">
+            <select id="list-selector" style="display: none;">
+                <option value="">Choisir une liste...</option>
+            </select>
             <button id="load-words">Charger une grille aléatoire</button>
             <button id="reset-grid" style="display: none;">Réinitialiser</button>
         </div>
@@ -410,11 +421,15 @@
             loadBtn: document.getElementById('load-words'),
             resetBtn: document.getElementById('reset-grid'),
             checkScoreBtn: document.getElementById('check-score'),
+            listSelector: document.getElementById('list-selector'),
             grid: document.getElementById('bingo-grid'),
             score: document.getElementById('score'),
             loading: document.getElementById('loading'),
             error: document.getElementById('error')
         };
+
+        // Variable pour stocker les listes chargées
+        let availableLists = {};
 
         // Fonction pour mélanger les mots (Fisher-Yates shuffle)
         function shuffle(array) {
@@ -449,26 +464,42 @@
             toggleUI(false, true);
         }
 
-        // Parser CSV avec gestion des guillemets
+        // Parser CSV avec gestion des colonnes comme listes différentes
         function parseCSV(text) {
-            const words = new Set();
-            const rows = text.split(/\r?\n/);
+            const rows = text.split(/\r?\n/).filter(row => row.trim().length > 0);
 
-            rows.forEach(row => {
-                const cells = row.split(',');
-                cells.forEach(cell => {
-                    const word = cell.trim().replace(/^["']|["']$/g, '');
-                    if (word && word.length > 0) {
-                        words.add(word);
-                    }
-                });
+            if (rows.length < 2) {
+                throw new Error('Le fichier CSV doit contenir au moins une ligne d\'en-têtes et des données');
+            }
+
+            // Première ligne = noms des listes
+            const headers = rows[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+
+            // Créer un objet pour chaque liste
+            const lists = {};
+            headers.forEach((header, index) => {
+                if (header) {
+                    lists[header] = [];
+                }
             });
 
-            return Array.from(words);
+            // Parser les lignes de données
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].split(',');
+                cells.forEach((cell, index) => {
+                    const word = cell.trim().replace(/^["']|["']$/g, '');
+                    const header = headers[index];
+                    if (word && word.length > 0 && header && lists[header]) {
+                        lists[header].push(word);
+                    }
+                });
+            }
+
+            return lists;
         }
 
-        // Charger une grille de mots depuis Google Sheets
-        async function loadWords() {
+        // Charger les listes disponibles depuis Google Sheets
+        async function loadAvailableLists() {
             toggleUI(true);
 
             try {
@@ -479,15 +510,47 @@
                 }
 
                 const data = await response.text();
-                const words = parseCSV(data);
+                availableLists = parseCSV(data);
 
-                if (words.length < CONFIG.minWords) {
-                    throw new Error(`La liste doit contenir au moins ${CONFIG.minWords} mots. Trouvés: ${words.length}`);
-                }
+                // Remplir le sélecteur avec les noms des listes
+                elements.listSelector.innerHTML = '<option value="">Choisir une liste...</option>';
+                Object.keys(availableLists).forEach(listName => {
+                    const option = document.createElement('option');
+                    option.value = listName;
+                    option.textContent = `${listName} (${availableLists[listName].length} mots)`;
+                    elements.listSelector.appendChild(option);
+                });
 
+                // Afficher le sélecteur
+                elements.listSelector.style.display = 'inline-block';
+                toggleUI(false);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(`Erreur lors du chargement des listes: ${error.message}`);
+            }
+        }
+
+        // Charger une grille de mots depuis la liste sélectionnée
+        async function loadWords() {
+            const selectedList = elements.listSelector.value;
+
+            if (!selectedList) {
+                showError('Veuillez d\'abord sélectionner une liste');
+                return;
+            }
+
+            const words = availableLists[selectedList];
+
+            if (!words || words.length < CONFIG.minWords) {
+                showError(`La liste "${selectedList}" doit contenir au moins ${CONFIG.minWords} mots. Trouvés: ${words?.length || 0}`);
+                return;
+            }
+
+            try {
                 const randomWords = getRandomWords(words, CONFIG.minWords);
                 generateGrid(randomWords);
-                toggleUI(false);
+                elements.error.style.display = 'none';
 
                 // Afficher les boutons de contrôle
                 elements.resetBtn.style.display = 'inline-block';
@@ -496,7 +559,7 @@
 
             } catch (error) {
                 console.error('Erreur:', error);
-                showError(`Erreur lors du chargement: ${error.message}`);
+                showError(`Erreur lors de la génération: ${error.message}`);
             }
         }
 
@@ -686,6 +749,9 @@
                 resetGrid();
             }
         });
+
+        // Charger les listes disponibles au démarrage
+        loadAvailableLists();
     </script>
 </body>
 </html>
